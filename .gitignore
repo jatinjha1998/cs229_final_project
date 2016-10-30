@@ -1,0 +1,10 @@
+# jupyter checkpoints
+.ipynb_*
+
+# python complied/optimized files
+__pycache__
+*.py[cod]
+*$py.class
+
+# vim swap files
+*.swp
