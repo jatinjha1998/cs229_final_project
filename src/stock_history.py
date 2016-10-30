@@ -21,14 +21,14 @@ def download_stock_histories(path, stock,
     Saves to 'stock.csv'. 
 
     Args:
-    path (string):
+    path : string
         path to save output to.
-    stock (string or list of strings):
+    stock : string or list of strings
         stock(s) to download.
-    start_date (numpy.datetime64):
-    end_date (numpy.datetime64):
+    start_date : numpy.datetime64 = datetime64('2015-01-01')
+    end_date : numpy.datetime64 = datetime64('2016-01-01')
         start and end times to query over
-    source (string or None):
+    source : string or None = 'google'
         'google' or 'yahoo'
     """
 
@@ -43,7 +43,7 @@ def download_stock_histories(path, stock,
             d = stock_data[i]['Close']
             d.to_csv(join(path, '{:s}.csv'.format(i)))
     elif isinstance(stock_data, pandas.DataFrame):
-        d['Close'].to_csv(join(path, '{:s}.csv'.format(stock)))
+        stock_data['Close'].to_csv(join(path, '{:s}.csv'.format(stock)))
 
 def read_stock_history(f, **kwargs):
     """ Sets default values for pandas.read_csv and passes on **kwargs """
