@@ -1,8 +1,12 @@
-""" Stock History Module
+""" Stock History sub-module
 
 Reads in stock history data. Assumes data only has two columns
     Date, Close
 """
+
+__all__ = ['download_stock_histories', \
+           'read_stock_history']
+
 
 from os.path import join
 import numpy
@@ -15,10 +19,11 @@ default_end_date = numpy.datetime64('2016-01-01'),
 def download_stock_histories(path, stock, 
         start_date=default_start_date, end_date=default_end_date,
         source='google'):
-    """ Uses pandas datareader to query the source for stock data.
+    """ Uses ``pandas_datareader`` to query the source for closing stock prices.
 
-    Drops all columns except for Close. Date should be the index.
-    Saves to 'stock.csv'. 
+    Drops all columns except for closing prices with the date as the index.
+    Saves the resulting pandas.Series(es) ``<stock>.csv``.
+    Notice: it saves the *Series*, so there will be no header information
 
     Args:
     path : string
@@ -45,8 +50,9 @@ def download_stock_histories(path, stock,
     elif isinstance(stock_data, pandas.DataFrame):
         stock_data['Close'].to_csv(join(path, '{:s}.csv'.format(stock)))
 
-def read_stock_history(f, **kwargs):
-    """ Sets default values for pandas.read_csv and passes on **kwargs """
-    return pandas.read_csv(f, index_col='Date', names=['Date', 'Close'], 
-        header=0, parse_dates=[0], **kwargs).astype(numpy.float64)
+read_stock_history = pandas.Series.from_csv
+
+#def read_stock_history(f, **kwargs):
+#    """Reads the csv ``f`` using ``pandas.Series.from_csv`` and passes on ``**kwargs``"""
+#    return pandas.Series.from_csv(path=f, **kwargs).astype(numpy.float64)
 
