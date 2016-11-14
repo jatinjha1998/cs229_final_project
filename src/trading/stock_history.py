@@ -23,6 +23,8 @@ def download_stock_histories(path, stock,
 
     Drops all columns except for closing prices with the date as the index.
     Saves the resulting pandas.Series(es) ``<stock>.csv``.
+    Will remove any nans from data, so if stock has no closing prices
+    for a period in the time frame, those indices will not show up.
     Notice: it saves the *Series*, so there will be no header information
 
     Args:
@@ -45,10 +47,10 @@ def download_stock_histories(path, stock,
     if isinstance(stock_data, pandas.Panel):
         stock_data = stock_data.transpose(2, 1, 0)
         for i in stock_data:
-            d = stock_data[i]['Close']
+            d = stock_data[i]['Close'].dropna()
             d.to_csv(join(path, '{:s}.csv'.format(i)))
     elif isinstance(stock_data, pandas.DataFrame):
-        stock_data['Close'].to_csv(join(path, '{:s}.csv'.format(stock)))
+        stock_data['Close'].dropna().to_csv(join(path, '{:s}.csv'.format(stock)))
 
 read_stock_history = pandas.Series.from_csv
 

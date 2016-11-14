@@ -1,9 +1,11 @@
 """ Portfolio sub-module
 
 A portfolio is a pandas.DataFrame with a time index and the following columns:
+    ca : cost of A's stocks
+    na : number of A's stocks
+    cb : cost of b's stocks
+    nb : number of B's stocks
     cash : cash assets
-    A : number of A's stocks
-    B : number of B's stocks
     total : total worth of portfolio
 """
 
@@ -13,9 +15,10 @@ __all__ = ['make_portfolio', \
 import numpy
 import pandas
 
-def make_portfolio(cash=0, A=0, B=0, total=0, index=None):
+def make_portfolio(ca=0, na=0, cb=0, nb=0, cash=0, total=0, index=None):
     """Makes a portfolia dataframe"""
-    return pandas.DataFrame(data={'cash': cash, 'A': A, 'B': B, 
+    return pandas.DataFrame(data={'ca': ca, 'na': na, 
+                                  'cb': cb, 'nb': nb, 'cash': cash,
                                   'total': total}, index=index)
 
 def allocate_stocks(total_amount=1E6, 
@@ -36,8 +39,7 @@ def allocate_stocks(total_amount=1E6,
     (na, nb) : (int, int)
         Number of each stock to buy
     """
-    max_a = total_amount // stock_a
-    na = int(min(max_a, round(0.5 * total_amount / stock_a)))
+    na = int(numpy.floor(target_weights[0] * total_amount / stock_a))
     ca = na * stock_a
     cb = total_amount - ca
     nb = int(cb // stock_b)
