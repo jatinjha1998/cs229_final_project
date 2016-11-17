@@ -12,7 +12,6 @@ A portfolio is a pandas.DataFrame with a time index and the following columns:
 __all__ = ['make_portfolio', \
            'allocate_stocks',\
            'trade_stocks',\
-           'PortfolioSnapshot',\
            'StockHolding']
 
 import numpy
@@ -41,14 +40,6 @@ class StockHolding:
         name_str =  '' if (self.name == '')  else self.name + ': '
         return '{:s}{:d} at {:.2f}$ ({:.2f}$)'.format(name_str,
                int(self.num), self.cost, self.total)
-
-class PortfolioSnapshot:
-    def __init__(self, lo: StockHolding, hi: StockHolding, cash, total=0):
-        self.lo = lo
-        self.hi = hi
-        self.cash = cash,
-        if total == 0:
-            total = lo + hi + cash
 
 def make_portfolio(cost_lo=0, num_lo=0, cost_hi=0, num_hi=0,
         cash=0, total=0, index=None):
@@ -79,11 +70,11 @@ def allocate_stocks(total_amount=1E6,
     (s1, s2) : (StockHolding, StockHolding)
     cash: float
     """
-    na = numpy.floor(target_weights[0] * total_amount / 
+    na = numpy.floor(target_weights[0] * total_amount /
             (cost_a + trans_cost))
     s1 = StockHolding(cost_a, na)
     cash = total_amount - s1.total - na * trans_cost
-   
+
     nb = numpy.floor(cash // (cost_b + trans_cost))
     s2 = StockHolding(cost_b, nb)
     cash -= (s2.total + nb * trans_cost)
