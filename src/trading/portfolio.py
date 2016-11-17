@@ -78,6 +78,9 @@ def allocate_stocks(total_amount=1E6,
     nb = numpy.floor(cash // (cost_b + trans_cost))
     s2 = StockHolding(cost_b, nb)
     cash -= (s2.total + nb * trans_cost)
+
+    cash = numpy.round(cash, 2)
+
     return (s1, s2, cash)
 
 def trade_stocks(percent_trade: float, s1: StockHolding,  s2: StockHolding,
@@ -89,7 +92,8 @@ def trade_stocks(percent_trade: float, s1: StockHolding,  s2: StockHolding,
     if total == 0:
         total = s1 + s2 + cash
 
-    # sell off from the larger stock first
+    # number of stocks to sell off from the larger stock
+    # do the sell first then buy
     delta_s1 = numpy.floor(percent_trade * total / s1.cost)
 
     # take into account transaction cost
@@ -100,6 +104,8 @@ def trade_stocks(percent_trade: float, s1: StockHolding,  s2: StockHolding,
     delta_s2 = numpy.floor(cash / (s2.cost + trans_cost))
     cash -= delta_s2 * (s2.cost + trans_cost)
     s2.num += delta_s2
+
+    cash = numpy.round(cash, 2)
 
     return (s1, s2, cash)
 
