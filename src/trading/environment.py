@@ -8,12 +8,14 @@ __all__ = ['Price', \
            'Action', \
            'actions', \
            'State', \
-           'SharpeRatio']
+           'last_return_reward', \
+           'sharpe_ratio_reward']
 
 import numpy as np
 import pandas as pd
 
 from .portfolio import *
+from .stock_history import *
 
 Price = np.float64
 Shares = np.uint
@@ -23,38 +25,57 @@ Action = np.float64
 actions = np.array([-0.25, -0.10, -0.05, 0, 0.05, 0.10, 0.25], dtype=Action)
 
 class State:
-    """Defines the agent's state for Q-learning"""
+    """Defines the agent's state for Q-learning
+
+    Includes the two stock histories, number of stocks owned, current reward,
+    cash, etc."""
+
     @staticmethod
     def num_states():
         return 8
 
-    def __init__(self, cost_lo_prev: Price, cost_lo: Price, num_lo: Shares,
-                cost_hi_prev: Price, cost_hi: Price, num_hi: Shares,
-                cash: Shares, trans_cost: Price=0,
-                name_lo: str='', name_hi: str =''):
-        self.cost_lo_prev = cost_lo_prev
-        self.lo = StockHolding(cost_lo, num_lo, name_lo)
-
-        self.cost_hi_prev = cost_hi_prev
-        self.hi = StockHolding(cost_hi, num_hi, name_hi)
-
-        self.cash = cash
+    def __init__(self, stocks: StockPair, cash: Price=1e6,
+            target_weights=(0.5, 0.5), trans_cost: Price=0.01):
+        """Initializes state by buying stocks to reach target weights (lo, hi)"""
         self.trans_cost = trans_cost
+
+        # keep the stock holding objects just for API ease
+        self.lo, self.hi, self.cash = allocate_stocks(cash,
+                stocks.hist_lo[0], stocks.hist_hi[0],
+                trans_cost=trans_cost, target_weights=target_weights,
+                symbol_a=stocks.lo, symbol_b=stocks.hi)
+
+        self.portfolio = make_portfolio(cost_lo=stocks.hist_lo,
+                cost_hi=stocks.hist_hi)
+
+        # assume both stocks have the same length
+        self.MAX_T = len(self.portfolio)
+        # current location in stock histories
+        self.t = 0
+        self.step()
 
     def __getattr__(self, attr):
         if attr == 'total':
             return self.lo + self.hi + self.cash
         elif attr == 'state':
-            return (self.cost_lo_prev, self.lo.cost, self.lo.num,
-                self.cost_hi_prev, self.hi.cost, self.hi.num,
+            return (self.portfolio.ix[self.t-1, 'cost_lo'],
+                self.lo.cost, self.lo.num,
+                self.portfolio.ix[self.t-1, 'cost_hi'],
+                self.hi.cost, self.hi.num,
                 self.cash, self.total)
 
-    def update(self, cost_lo_new, cost_hi_new):
-        """Update stock costs with a new one and returns the old total"""
-        old_total = self.total
+    def step(self):
+        """Update state one time step forward"""
+        if self.t == self.MAX_T:
+            raise StopIteration
 
-        self.cost_lo_prev, self.lo.cost = self.lo.cost, cost_lo_new
-        self.cost_hi_prev, self.hi.cost = self.hi.cost, cost_hi_new
+        old_total = self.total
+        self.portfolio.ix[self.t, ['num_lo', 'num_hi', 'cash', 'total']] = \
+            [self.lo.num, self.hi.num, self.cash, self.total]
+
+        self.t += 1
+        self.lo.cost = self.portfolio.ix[self.t, 'cost_lo']
+        self.hi.cost = self.portfolio.ix[self.t, 'cost_hi']
 
         return old_total
 
@@ -76,34 +97,29 @@ class State:
 
         return old_total
 
+# NOTE: returns don't take into account the current day (m.t) because no
+#  action has been executed on that day. the current return (r_t) for the
+#  action done on day == m.t will only be available after m.t is performed with
+#  m.step()
+def last_return_reward(m: State):
+    """Uses last return as the reward"""
 
-class SharpeRatio:
-    """Online (incremental) estimation of Sharpe's Ratio
+    return (m.portfolio.ix[m.t-1, 'total'] - m.portfolio.ix[m.t-2, 'total']) \
+        if (m.t > 1) else 0
+
+
+def sharpe_ratio_reward(m: State):
+    """Sharpe Ratio of a portfolio up to (and including) index t, zero based
 
     Uses sample std dev (sₙ), not σₙ
-    Taken from:http://math.stackexchange.com/a/103025
     """
+    if m.t < 2:
+        return 0
 
-    def __init__(self, returns: np.array=np.empty(0)):
-        if returns.size == 0:
-            self.mean = 0
-            self.std = 0
-        else:
-            self.mean = np.mean(returns)
-            self.std = np.std(returns)
-        self.n = returns.size
-
-    def update(self, rt: np.float64):
-        old_mean, old_std = self.mean, self.std
-        self.n += 1
-        n = self.n
-
-        if n == 1:
-            self.mean = rt
-            self.std = 0
-        else:
-            self.mean = ( old_mean * (n-1) + rt ) / n
-            self.std = np.sqrt( (n-2)/(n-1)*old_std**2 + (rt - old_mean)**2 / (n) )
-
-        return old_mean, old_std
+    returns = m.portfolio.ix[0:m.t, 'total'].values
+    returns = returns[1:m.t] - returns[0:(m.t-1)]
+    μ = np.mean(returns)
+    # unbiased (meh) estimator of std dev
+    s = np.std(returns, ddof=1)
+    return μ/s if (s != 0) else 0
 

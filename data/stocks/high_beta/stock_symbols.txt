@@ -1,5 +1,6 @@
 APA
 ETFC
-MU
+FCX
 WDC
 WMB
+MS

@@ -25,9 +25,8 @@ from sklearn.model_selection import train_test_split
 
 MODULE_LOC = dirname(abspath(__file__))
 STOCK_DATA_DIR = abspath(join(MODULE_LOC, '..', '..', 'data', 'stocks'))
-HI_BETA_DIR = join(STOCK_DATA_DIR, 'high_beta')
 LO_BETA_DIR = join(STOCK_DATA_DIR, 'low_beta')
-
+HI_BETA_DIR = join(STOCK_DATA_DIR, 'high_beta')
 
 DEFAULT_START_DATE = np.datetime64('2015-01-01')
 DEFAULT_END_DATE = np.datetime64('2016-01-01')
@@ -50,16 +49,16 @@ def get_stock_pairs(train_size=20):
     respectively.
     For more info, see 'sklearn.model_selection.train_test_split'"""
 
-    lo_beta_files = glob.glob(join(LO_BETA_DIR, '*.csv'))
-    hi_beta_files = glob.glob(join(HI_BETA_DIR, '*.csv'))
+    lo_beta_files = get_lo_beta_stock_symbols()
+    hi_beta_files = get_hi_beta_stock_symbols()
     stock_pairs = []
 
-    for pair in itertools.product(lo_beta_files, hi_beta_files):
-        # the stock ticker names
-        L, H =  map(lambda f: splitext(basename(f))[0], pair)
+    for (L, H) in itertools.product(lo_beta_files, hi_beta_files):
         # the actual histories
-        hist_l, hist_h = map(lambda f: read_stock_history(f), pair)
-        stock_pairs.append(StockPair(L, H, hist_l, hist_h))
+        hist_lo = read_stock_history(join(LO_BETA_DIR, L + '.csv'))
+        hist_hi = read_stock_history(join(HI_BETA_DIR, H + '.csv'))
+
+        stock_pairs.append(StockPair(L, H, hist_lo, hist_hi))
 
     return train_test_split(stock_pairs, train_size=train_size)
 
