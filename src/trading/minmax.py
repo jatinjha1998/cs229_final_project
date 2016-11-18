@@ -14,21 +14,24 @@ def check_dates(date_A, name_A, date_B, name_B):
 # ===================================
 # FUNCTION: Perform min/max, write outputs
 # ===================================
-def minmax(name_A, name_B, opt, \
-   in_path="../../data/", out_path="../../data/", init=1000):
+def minmax(opt, path_A, path_B, out_path, init=1000):
     
     # ===================================
     # SETUP
     # ===================================
     
     # Parsing filenames, creating paths
-    path_A = in_path + name_A
+    name_A = path_A.split('/')[-1]
     if ".csv" not in path_A:
         path_A = path_A + ".csv"
+    else:
+        name_A = name_A[:-4]
 
-    path_B = in_path + name_B
+    name_B = path_B.split('/')[-1]
     if ".csv" not in path_B:
         path_B = path_B + ".csv"
+    else:
+        name_B = name_B[:-4]
 
     path_O = out_path + name_A + "_" + name_B + ".csv"
     name_A = name_A.upper()
@@ -130,6 +133,7 @@ name_A = sys.argv[1]
 name_B = sys.argv[2]
     
 for opt in ['min', 'max']:
-    in_dir  = "../../data/"
+    path_A  = "../../data/stocks/" + name_A
+    path_B  = "../../data/stocks/" + name_B
     out_dir = "../../data/bench-" + opt + "/"
-    minmax(name_A, name_B, opt, in_dir, out_dir)
+    minmax(opt, path_A, path_B, out_dir)
