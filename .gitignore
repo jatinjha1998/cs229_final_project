@@ -8,3 +8,7 @@ __pycache__
 
 # vim swap files
 *.swp
+
+# old stock files
+data/stocks/old
+

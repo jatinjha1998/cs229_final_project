@@ -21,7 +21,7 @@ def _benchmark_validate_args(**kwargs):
         raise ValueError('target weights must sum to one')
 
 def do_nothing_benchmark(stock_a, stock_b, initial_value=1e6,
-                         target_weights=(0.5, 0.5), trans_cost=0.0):
+                         target_weights=(0.5, 0.5), trans_cost=0.01):
 
     """Simulates stock perfomance if left alone
 
@@ -46,18 +46,19 @@ def do_nothing_benchmark(stock_a, stock_b, initial_value=1e6,
     _benchmark_validate_args(**locals())
 
     # buy initial assest
-    (na, nb) = allocate_stocks(initial_value,
-                               stock_a.iloc[0] + trans_cost,
-                               stock_b.iloc[0] + trans_cost,
-                               target_weights)
+    (s1, s2, cash) = allocate_stocks(initial_value,
+           stock_a.iloc[0],
+           stock_b.iloc[0],
+           trans_cost=trans_cost,
+           target_weights=target_weights)
 
-    cash = initial_value - \
-           na * (stock_a.iloc[0] + trans_cost) - \
-           nb * (stock_b.iloc[0] + trans_cost)
-    return make_portfolio(cash, na, nb, na * stock_a + nb * stock_b)
+    return make_portfolio(stock_a, s1.num,
+                          stock_b, s2.num,
+                          cash,
+                          s1.num * stock_a + s2.num * stock_b + cash)
 
 def rebalance_benchmark(stock_a, stock_b, initial_value=1e6,
-                   target_weights=(0.5, 0.5), trans_cost=0.0,
+                   target_weights=(0.5, 0.5), trans_cost=0.01,
                    rebalance_period=5):
     """Simulates stock performance if rebalanced every so often
 
@@ -89,10 +90,11 @@ def rebalance_benchmark(stock_a, stock_b, initial_value=1e6,
         raise ValueError('rebalance_period must be in (0, time period)')
 
     rebalance_period = int(rebalance_period)
-    portfolio = make_portfolio(index=stock_a.index)
+    portfolio = make_portfolio(cost_lo=stock_a, cost_hi=stock_b)
 
-    total = initial_value
-    old_a = old_b = 0
+    s1 = StockHolding()
+    s2 = StockHolding()
+    cash = initial_value
 
     for k, g in portfolio.groupby(numpy.arange(len(portfolio)) //
                                   rebalance_period):
@@ -100,26 +102,29 @@ def rebalance_benchmark(stock_a, stock_b, initial_value=1e6,
         start = index[0]
         end = index[-1]
 
-        (na, nb) = allocate_stocks(total,
-                                   stock_a.loc[start] + trans_cost,
-                                   stock_b.loc[start] + trans_cost,
-                                   target_weights)
-        # difference in stock values
-        da = na - old_a
-        db = nb - old_b
+        if (s1.total == 0) and (s2.total == 0):
+            (s1, s2, cash) = allocate_stocks(initial_value,
+                       stock_a.loc[start],
+                       stock_b.loc[start],
+                       trans_cost = trans_cost,
+                       target_weights = target_weights)
+        else:
+            s1.cost = stock_a.loc[start]
+            s2.cost = stock_b.loc[start]
 
-        cash = total - \
-               old_a * stock_a.loc[start] - \
-               old_b * stock_b.loc[start] - \
-               da * (stock_a.loc[start] + trans_cost) - \
-               db * (stock_b.loc[start] + trans_cost)
+            total = s1 + s2 + cash
+            (lrg_stk, sml_stk) = (s1, s2) if \
+                ((s1.total / total) > target_weights[0]) else (s2, s1)
 
-        portfolio.loc[index, ('A', 'B', 'cash')] = (na, nb, cash)
-        portfolio.loc[index, 'total'] = na * stock_a[index] + \
-                                        nb * stock_b[index] + cash
+            # difference in actual vs desired
+            percent_trade = abs(lrg_stk.total / total - target_weights[0])
+            (lrg_stk, sml_stk, cash) = trade_stocks(percent_trade,
+                lrg_stk, sml_stk, cash, trans_cost)
 
-        total = portfolio.loc[end, 'total']
-        old_a, old_b = na, nb
+        portfolio.loc[index, ('num_lo', 'num_hi')] = (s1.num, s2.num)
+        portfolio.loc[index, 'cash'] = cash
+        portfolio.loc[index, 'total'] = s1.num * stock_a[index] + \
+                                        s2.num * stock_b[index] + cash
 
     return portfolio
 
