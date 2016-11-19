@@ -108,25 +108,34 @@ class State:
 #  action has been executed on that day. the current return (r_t) for the
 #  action done on day == m.t will only be available after m.t is performed with
 #  m.step()
-def last_return_reward(m: State):
+def last_return_reward(m):
     """Uses last return as the reward"""
+    if isinstance(m, pd.DataFrame):
+        return m.ix[-1, 'total'] - m.ix[-2, 'total']
+    else:
+        return (m.portfolio.ix[m.t-1, 'total'] - \
+            m.portfolio.ix[m.t-2, 'total']) \
+            if (m.t > 1) else 0
 
-    return (m.portfolio.ix[m.t-1, 'total'] - m.portfolio.ix[m.t-2, 'total']) \
-        if (m.t > 1) else 0
 
-
-def sharpe_ratio_reward(m: State):
+def sharpe_ratio_reward(m):
     """Sharpe Ratio of a portfolio up to (and including) index t, zero based
 
     Uses sample std dev (sₙ), not σₙ
     """
-    if m.t < 3:
+    if isinstance(m, pd.DataFrame):
+        returns = m.ix[:, 'total'].values
+        t = len(m)
+    else:
+        returns = m.portfolio.ix[0:m.t, 'total'].values
+        t = m.t
+
+    if t < 3:
         # no returns yet if just one day old
         # two days old, one return, sharpe ratio undefined . . .
         return 0
 
-    returns = m.portfolio.ix[0:m.t, 'total'].values
-    returns = returns[1:m.t] - returns[0:(m.t-1)]
+    returns = returns[1:t] - returns[0:(t-1)]
     μ = np.mean(returns)
     # unbiased (meh) estimator of std dev
     s = np.std(returns, ddof=1)

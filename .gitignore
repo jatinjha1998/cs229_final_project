@@ -9,6 +9,10 @@ __pycache__
 # vim swap files
 *.swp
 
+# pictures
+*.png
+*.jpg
+
 # old stock files
 data/stocks/old
 
