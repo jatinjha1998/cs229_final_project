@@ -11,8 +11,9 @@ import pandas
 from .portfolio import *
 
 def _benchmark_validate_args(**kwargs):
-    if not all(kwargs['stock_a'].index == kwargs['stock_b'].index):
-        raise ValueError('stocks are not over same time period')
+    # ignore unequal lengths since we are dropping all nans
+    #if not all(kwargs['stock_a'].index == kwargs['stock_b'].index):
+    #    raise ValueError('stocks are not over same time period')
 
     if kwargs['initial_value'] <= 0:
         raise ValueError('initial value must be positive')
