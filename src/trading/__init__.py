@@ -6,5 +6,5 @@ and trade stocks."""
 from .stock_history import *
 from .portfolio import *
 from .benchmarks import *
-from .environment import *
+from .rl import *
 

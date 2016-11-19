@@ -10,10 +10,15 @@ __all__ = ['Price', \
            'State', \
            'last_return_reward', \
            'sharpe_ratio_reward', \
-           'choose_actions']
+           'choose_actions', \
+           'create_model', \
+           'copy_model', \
+           'track_model']
 
 import numpy as np
 import pandas as pd
+from keras.models import Sequential
+from keras.layers import Dense, Activation
 
 from .portfolio import *
 from .stock_history import *
@@ -141,8 +146,35 @@ def choose_actions(qvalues: np.array, ϵ=0.15):
     # choose whethar to take random at random, randomly (uniform)
     take_random = np.random.rand(qvalues.shape[0]) < ϵ
     # generate random ϵ-greedy actions, randomly (also uniform)
-    chosen_actions[take_random] = np.random.randint(actions.size, 
+    chosen_actions[take_random] = np.random.randint(actions.size,
            size=sum(take_random))
 
     return chosen_actions
+
+def create_model(n, k, H, non_linearity, init, optimizer):
+    model = Sequential([
+        Dense(input_dim=n, output_dim=H, init=init),
+        Activation(non_linearity),
+        Dense(output_dim=H, init=init), # H 1
+        Activation(non_linearity),
+        Dense(output_dim=H, init=init), # H 2
+        Activation(non_linearity),
+        Dense(output_dim=H, init=init), # H 3
+        Activation(non_linearity),
+        Dense(output_dim=k)])
+
+    model.compile(loss='mean_squared_error',
+                  optimizer=optimizer, metrics=['mean_squared_error'])
+
+    return model
+
+def copy_model(target, model):
+    target.set_weights(model.get_weights())
+
+def track_model(target, model, τ):
+    model_weights = model.get_weights()
+    target_weights = target.get_weights()
+    new_weights = [τ * m + (1-τ)*t for (m, t) in \
+        zip(model_weights, target_weights)]
+    target.set_weights(new_weights)
 
