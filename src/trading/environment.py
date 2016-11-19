@@ -9,7 +9,8 @@ __all__ = ['Price', \
            'actions', \
            'State', \
            'last_return_reward', \
-           'sharpe_ratio_reward']
+           'sharpe_ratio_reward', \
+           'choose_actions']
 
 import numpy as np
 import pandas as pd
@@ -66,14 +67,15 @@ class State:
 
     def step(self):
         """Update state one time step forward"""
-        if self.t == self.MAX_T:
-            raise StopIteration
-
         old_total = self.total
         self.portfolio.ix[self.t, ['num_lo', 'num_hi', 'cash', 'total']] = \
             [self.lo.num, self.hi.num, self.cash, self.total]
 
         self.t += 1
+
+        if self.t == self.MAX_T:
+            raise StopIteration
+
         self.lo.cost = self.portfolio.ix[self.t, 'cost_lo']
         self.hi.cost = self.portfolio.ix[self.t, 'cost_hi']
 
@@ -83,16 +85,16 @@ class State:
         """Sell off lo to buy hi (if action > 0, vice-versa if < 0) Returns old total"""
         old_total = self.total
 
-        if (not action in actions) or (action == 0):
-            return
-
         (buy_stk, sell_stk) = (self.hi, self.lo) \
             if (action > 0) \
             else (self.lo, self.hi)
 
+        # can't sell more than you have
         percent_trade = np.minimum(sell_stk.total / self.total, abs(action))
 
-        (buy_stk, sell_stk, self.cash) = trade_stocks(percent_trade,
+        if (action in actions) and (np.abs(percent_trade) > 1E-4):
+            # gotta deal with zeros . . .
+            (buy_stk, sell_stk, self.cash) = trade_stocks(percent_trade,
                 sell_stk, buy_stk, cash=self.cash, trans_cost=self.trans_cost)
 
         return old_total
@@ -113,7 +115,9 @@ def sharpe_ratio_reward(m: State):
 
     Uses sample std dev (sₙ), not σₙ
     """
-    if m.t < 2:
+    if m.t < 3:
+        # no returns yet if just one day old
+        # two days old, one return, sharpe ratio undefined . . .
         return 0
 
     returns = m.portfolio.ix[0:m.t, 'total'].values
@@ -122,4 +126,23 @@ def sharpe_ratio_reward(m: State):
     # unbiased (meh) estimator of std dev
     s = np.std(returns, ddof=1)
     return μ/s if (s != 0) else 0
+
+def choose_actions(qvalues: np.array, ϵ=0.15):
+    """Picks the action with the largest value w.p. (1-ϵ), otherwise random
+
+    Args:
+    qvalues: np.array
+        2d array of Q values for each action (axis 1, each column)
+        per training element (state) across axis 0 (each row))
+    ϵ: float
+        Probability of choosing a random action
+    """
+    chosen_actions = np.argmax(qvalues, axis=1)
+    # choose whethar to take random at random, randomly (uniform)
+    take_random = np.random.rand(qvalues.shape[0]) < ϵ
+    # generate random ϵ-greedy actions, randomly (also uniform)
+    chosen_actions[take_random] = np.random.randint(actions.size, 
+           size=sum(take_random))
+
+    return chosen_actions
 

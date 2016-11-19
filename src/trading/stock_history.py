@@ -35,8 +35,8 @@ DEFAULT_END_DATE = np.datetime64('2016-01-01')
 class StockPair:
     def __init__(self, lo, hi, hist_lo, hist_hi):
         # stock ticker symbols (strings)
-        self.lo = hi
-        self.hi = lo
+        self.lo = lo
+        self.hi = hi
         # stock history (pandas data arrays)
         self.hist_lo = hist_lo
         self.hist_hi = hist_hi
