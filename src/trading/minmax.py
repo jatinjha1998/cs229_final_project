@@ -1,20 +1,9 @@
 import sys, csv, math
 
 # ===================================
-# FUNCTION: Checking dates
-# ===================================  
-def check_dates(date_A, name_A, date_B, name_B):
-    if date_A != date_B:
-        print "ERROR: Mismatching dates, " + \
-            date_A + "(" + name_A + ") vs " + \
-            date_B + "(" + name_B + ")"
-        exit(1)
-    return
-
-# ===================================
 # FUNCTION: Perform min/max, write outputs
 # ===================================
-def minmax(opt, path_A, path_B, out_path, init=1000):
+def minmax_benchmark(opt, path_A, path_B, out_path, init=1000):
     
     # ===================================
     # SETUP
@@ -70,7 +59,19 @@ def minmax(opt, path_A, path_B, out_path, init=1000):
     cur_val_A = float(cur_val_A)
     cur_val_B = float(cur_val_B)
 
-    check_dates(cur_date_A, name_A, cur_date_B, name_B)
+    # Checking dates
+    while cur_date_A != cur_date_B:
+        # Debug message
+        print "ERROR: Mismatching dates, " + \
+            cur_date_A + "(" + name_A + ") vs " + \
+            cur_date_B + "(" + name_B + ")"
+        # Compare days, advance 'slower' date
+        day_A = int(cur_date_A.split("-")[-1])
+        day_B = int(cur_date_B.split("-")[-1])
+        if day_A < day_B:
+            (cur_date_A, cur_val_A) = reader_A.next()
+        else:
+            (cur_date_B, cur_val_B) = reader_B.next()
 
     while True:
         date = cur_date_A
@@ -79,7 +80,21 @@ def minmax(opt, path_A, path_B, out_path, init=1000):
             # Getting next stocks
             (nxt_date_A, nxt_val_A) = reader_A.next()
             (nxt_date_B, nxt_val_B) = reader_B.next()
-            check_dates(nxt_date_A, name_A, nxt_date_B, name_B)
+            
+            # Checking dates
+            while nxt_date_A != nxt_date_B:
+                # Debug message
+                print "ERROR: Mismatching dates, " + \
+                    nxt_date_A + "(" + name_A + ") vs " + \
+                    nxt_date_B + "(" + name_B + ")"
+                # Compare days, advance 'slower' date
+                day_A = int(nxt_date_A.split("-")[-1])
+                day_B = int(nxt_date_B.split("-")[-1])
+                if day_A < day_B:
+                    (nxt_date_A, nxt_val_A) = reader_A.next()
+                else:
+                    (nxt_date_B, nxt_val_B) = reader_B.next()
+
             nxt_val_A = float(nxt_val_A)
             nxt_val_B = float(nxt_val_B)
             amt_A = 0
@@ -119,21 +134,3 @@ def minmax(opt, path_A, path_B, out_path, init=1000):
             
         except StopIteration:
             break
-
-# ===================================
-# MAIN
-# ===================================
-
-# Validating arguments
-if len(sys.argv) != 3:
-    print "Usage: <Stock1> <Stock 2>"
-    exit(1)
-    
-name_A = sys.argv[1]
-name_B = sys.argv[2]
-    
-for opt in ['min', 'max']:
-    path_A  = "../../data/stocks/" + name_A
-    path_B  = "../../data/stocks/" + name_B
-    out_dir = "../../data/bench-" + opt + "/"
-    minmax(opt, path_A, path_B, out_dir)

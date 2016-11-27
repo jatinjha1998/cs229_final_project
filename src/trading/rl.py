@@ -40,8 +40,8 @@ class State:
     def num_states():
         return 8
 
-    def __init__(self, stocks: StockPair, cash: Price=1e6,
-            target_weights=(0.5, 0.5), trans_cost: Price=0.01):
+    def __init__(self, stocks, cash=1e6,
+            target_weights=(0.5, 0.5), trans_cost=0.01):
         """Initializes state by buying stocks to reach target weights (lo, hi)"""
         self.trans_cost = trans_cost
 
@@ -86,7 +86,7 @@ class State:
 
         return old_total
 
-    def execute_trade(self, action: Action):
+    def execute_trade(self, action):
         """Sell off lo to buy hi (if action > 0, vice-versa if < 0) Returns old total"""
         old_total = self.total
 
@@ -121,7 +121,7 @@ def last_return_reward(m):
 def sharpe_ratio_reward(m):
     """Sharpe Ratio of a portfolio up to (and including) index t, zero based
 
-    Uses sample std dev (sₙ), not σₙ
+    Uses sample std dev (s_n), not sigma_n
     """
     if isinstance(m, pd.DataFrame):
         returns = m.ix[:, 'total'].values
@@ -136,25 +136,25 @@ def sharpe_ratio_reward(m):
         return 0
 
     returns = returns[1:t] - returns[0:(t-1)]
-    μ = np.mean(returns)
+    mu = np.mean(returns)
     # unbiased (meh) estimator of std dev
     s = np.std(returns, ddof=1)
-    return μ/s if (s != 0) else 0
+    return miu/s if (s != 0) else 0
 
-def choose_actions(qvalues: np.array, ϵ=0.15):
-    """Picks the action with the largest value w.p. (1-ϵ), otherwise random
+def choose_actions(qvalues, epsilon=0.15):
+    """Picks the action with the largest value w.p. (1-epsilon), otherwise random
 
     Args:
     qvalues: np.array
         2d array of Q values for each action (axis 1, each column)
         per training element (state) across axis 0 (each row))
-    ϵ: float
+    epsilon: float
         Probability of choosing a random action
     """
     chosen_actions = np.argmax(qvalues, axis=1)
     # choose whethar to take random at random, randomly (uniform)
-    take_random = np.random.rand(qvalues.shape[0]) < ϵ
-    # generate random ϵ-greedy actions, randomly (also uniform)
+    take_random = np.random.rand(qvalues.shape[0]) < epsilon
+    # generate random epsilon-greedy actions, randomly (also uniform)
     chosen_actions[take_random] = np.random.randint(actions.size,
            size=sum(take_random))
 
@@ -180,10 +180,10 @@ def create_model(n, k, H, non_linearity, init, optimizer):
 def copy_model(target, model):
     target.set_weights(model.get_weights())
 
-def track_model(target, model, τ):
+def track_model(target, model, tau):
     model_weights = model.get_weights()
     target_weights = target.get_weights()
-    new_weights = [τ * m + (1-τ)*t for (m, t) in \
+    new_weights = [tau * m + (1-tau)*t for (m, t) in \
         zip(model_weights, target_weights)]
     target.set_weights(new_weights)
 

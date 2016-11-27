@@ -54,7 +54,7 @@ def make_portfolio(cost_lo=0, num_lo=0, cost_hi=0, num_hi=0,
 def allocate_stocks(total_amount=1E6,
                     cost_a=16, cost_b=16, trans_cost=0.01,
                     target_weights=(0.5, 0.5),
-                    symbol_a: str='', symbol_b: str=''):
+                    symbol_a='', symbol_b=''):
     """Return number of stocks to buy reach target_weights
 
     Args:
@@ -88,13 +88,13 @@ def allocate_stocks(total_amount=1E6,
 
     return (s1, s2, cash)
 
-def trade_stocks(percent_trade: float, s1: StockHolding,  s2: StockHolding,
-                 cash: float, trans_cost: float=0.01):
+def trade_stocks(percent_trade, s1,  s2,
+                 cash, trans_cost=0.01):
     """Sell off percent_trade * total of the s1 to buy s2"""
     if not (0 < percent_trade < 1):
         raise ValueError('percent_trade ({}) must be in (0, 1)'.format(percent_trade))
 
-    total = s1 + s2 + cash
+    total = s1.total + s2.total + cash
 
     # number of stocks to sell off from the larger stock
     # do the sell first then buy

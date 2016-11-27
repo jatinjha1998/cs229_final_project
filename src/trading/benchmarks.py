@@ -101,7 +101,8 @@ def rebalance_benchmark(stock_a, stock_b, initial_value=1e6,
                                   rebalance_period):
         index = g.index
         start = index[0]
-        end = index[-1]
+        end   = index[-1]
+        total = 0
 
         if (s1.total == 0) and (s2.total == 0):
             (s1, s2, cash) = allocate_stocks(initial_value,
@@ -113,7 +114,7 @@ def rebalance_benchmark(stock_a, stock_b, initial_value=1e6,
             s1.cost = stock_a.loc[start]
             s2.cost = stock_b.loc[start]
 
-            total = s1 + s2 + cash
+            total = s1.total + s2.total + cash
             (lrg_stk, sml_stk) = (s1, s2) if \
                 ((s1.total / total) > target_weights[0]) else (s2, s1)
 

@@ -23,7 +23,12 @@ if int(sys.version[0]) >= 3:
 # ========================================
 
 # Filepaths
+lo_path    = trd.LO_BETA_DIR + "/"
+hi_path    = trd.HI_BETA_DIR + "/"
 out_path   = "./../out/"
+bench_path = trd.STOCK_DATA_DIR + "/../"
+bench_max_name = "bench-max/"
+bench_min_name = "bench-min/"
 
 # Variables
 output_num    = 10
@@ -61,14 +66,30 @@ for i, pair in enumerate(data):
     ax1.legend(bbox_to_anchor=(0, 1), loc='upper left', ncol=1)
     plt.xticks(rotation=40)
     
-    # Generating benchmark data
+    # 'Nothing' benchmark data
     do_nothing = trd.do_nothing_benchmark(lo_hist, hi_hist, trans_cost=trans_cost, initial_value=initial_value)
+    # 'Rebalance' benchmark data
     rebal = trd.rebalance_benchmark(lo_hist, hi_hist, rebalance_period=30, initial_value=initial_value, trans_cost=trans_cost)
+    # 'Maximum' benchmark data
+    lo_fullpath  = lo_path + lo_name
+    hi_fullpath  = hi_path + hi_name
+    max_path     = bench_path + bench_max_name
+    max_fullpath = max_path + lo_name + "_" + hi_name + ".csv"
+    trd.minmax_benchmark("max", lo_fullpath, hi_fullpath, max_path)
+    bench_max = pd.read_csv(max_fullpath)
+    # 'Minimum' benchmark data
+    min_path    = bench_path + bench_min_name
+    min_fullpath = min_path + lo_name + "_" + hi_name + ".csv"
+    trd.minmax_benchmark("min", lo_fullpath, hi_fullpath, min_path)
+    bench_min = pd.read_csv(min_fullpath)
        
-    # Plotting benchmark outputs
+    # Plotting outputs
     ax2 = plt.subplot(output_num, 2, 2*i + 2)
     cust_plt(ax2, do_nothing.total, 'do nothing')
     cust_plt(ax2, rebal.total, 'rebalance (30)')
+    # TODO: ERROR
+    #cust_plt(ax2, bench_max["Total"], 'maximum')
+    #cust_plt(ax2, bench_min["Total"], 'minimum')
     # Formatting
     ax2.axhline(y=initial_value, color='black')
     ax2.legend(bbox_to_anchor=(0, 1), loc='upper left', ncol=1)

@@ -5,6 +5,7 @@
 __pycache__
 *.py[cod]
 *$py.class
+*.pyc
 
 # vim swap files
 *.swp
@@ -15,4 +16,7 @@ __pycache__
 
 # old stock files
 data/stocks/old
+*.csv
 
+# Logfiles
+*.log
