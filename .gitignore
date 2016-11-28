@@ -1,6 +1,9 @@
 # jupyter checkpoints
 .ipynb_*
 
+# AFS temp files
+.__afs*
+
 # python complied/optimized files
 __pycache__
 *.py[cod]

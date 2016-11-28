@@ -27,6 +27,8 @@ lo_path    = trd.LO_BETA_DIR + "/"
 hi_path    = trd.HI_BETA_DIR + "/"
 out_path   = "./../out/"
 bench_path = trd.STOCK_DATA_DIR + "/../"
+bench_nth_name = "bench-nth/"
+bench_rbl_name = "bench-rbl/"
 bench_max_name = "bench-max/"
 bench_min_name = "bench-min/"
 
@@ -34,6 +36,7 @@ bench_min_name = "bench-min/"
 output_num    = 10
 initial_value = 1E6
 trans_cost    = 0.001
+rebalance_amt = 30
 
 # ========================================
 # Plotting benchmarks
@@ -67,34 +70,36 @@ for i, pair in enumerate(data):
     plt.xticks(rotation=40)
     
     # 'Nothing' benchmark data
-    do_nothing = trd.do_nothing_benchmark(lo_hist, hi_hist, trans_cost=trans_cost, initial_value=initial_value)
+    bench_nth = trd.do_nothing_benchmark(lo_hist, hi_hist, trans_cost=trans_cost, initial_value=initial_value)
     # 'Rebalance' benchmark data
-    rebal = trd.rebalance_benchmark(lo_hist, hi_hist, rebalance_period=30, initial_value=initial_value, trans_cost=trans_cost)
+    bench_rbl = trd.rebalance_benchmark(lo_hist, hi_hist, rebalance_period=rebalance_amt, initial_value=initial_value, trans_cost=trans_cost)
     # 'Maximum' benchmark data
-    lo_fullpath  = lo_path + lo_name
-    hi_fullpath  = hi_path + hi_name
-    max_path     = bench_path + bench_max_name
-    max_fullpath = max_path + lo_name + "_" + hi_name + ".csv"
-    trd.minmax_benchmark("max", lo_fullpath, hi_fullpath, max_path)
-    bench_max = pd.read_csv(max_fullpath)
+    bench_max = trd.minmax_benchmark(lo_hist, hi_hist, initial_value=initial_value, trans_cost=trans_cost, opt="max")
     # 'Minimum' benchmark data
-    min_path    = bench_path + bench_min_name
-    min_fullpath = min_path + lo_name + "_" + hi_name + ".csv"
-    trd.minmax_benchmark("min", lo_fullpath, hi_fullpath, min_path)
-    bench_min = pd.read_csv(min_fullpath)
-       
+    bench_min = trd.minmax_benchmark(lo_hist, hi_hist, initial_value=initial_value, trans_cost=trans_cost, opt="min")
+    
     # Plotting outputs
     ax2 = plt.subplot(output_num, 2, 2*i + 2)
-    cust_plt(ax2, do_nothing.total, 'do nothing')
-    cust_plt(ax2, rebal.total, 'rebalance (30)')
+    cust_plt(ax2, bench_nth.total, 'do nothing')
+    cust_plt(ax2, bench_rbl.total, 'rebalance (' + str(rebalance_amt) + ')')
     # TODO: ERROR
-    #cust_plt(ax2, bench_max["Total"], 'maximum')
-    #cust_plt(ax2, bench_min["Total"], 'minimum')
+    cust_plt(ax2, bench_max.total, 'maximum')
+    cust_plt(ax2, bench_min.total, 'minimum')
     # Formatting
     ax2.axhline(y=initial_value, color='black')
     ax2.legend(bbox_to_anchor=(0, 1), loc='upper left', ncol=1)
-    ax2.set_ylim(bottom=0)
+    ax2.set_yscale('log')
     plt.xticks(rotation=40)
+    
+    # Saving outputs
+    path_nth = bench_path + bench_nth_name + lo_name + "_" + hi_name + ".csv"
+    path_rbl = bench_path + bench_rbl_name + str(rebalance_amt) + "_" + lo_name + "_" + hi_name + ".csv"
+    path_max = bench_path + bench_max_name + lo_name + "_" + hi_name + ".csv"
+    path_min = bench_path + bench_min_name + lo_name + "_" + hi_name + ".csv"
+    bench_nth.to_csv(path_nth)
+    bench_rbl.to_csv(path_rbl)
+    bench_max.to_csv(path_max)
+    bench_min.to_csv(path_min)
     
 # Saving figure
 fig_path = out_path + "benchmarks.png"
