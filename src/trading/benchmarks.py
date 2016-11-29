@@ -103,8 +103,7 @@ def rebalance_benchmark(stock_a, stock_b, initial_value=1e6,
                                   rebalance_period):
         index = g.index
         start = index[0]
-        end   = index[-1]
-        total = 0
+        end = index[-1]
 
         if (s1.total == 0) and (s2.total == 0):
             (s1, s2, cash) = allocate_stocks(initial_value,
@@ -116,7 +115,7 @@ def rebalance_benchmark(stock_a, stock_b, initial_value=1e6,
             s1.cost = stock_a.loc[start]
             s2.cost = stock_b.loc[start]
 
-            total = s1.total + s2.total + cash
+            total = s1 + s2 + cash
             (lrg_stk, sml_stk) = (s1, s2) if \
                 ((s1.total / total) > target_weights[0]) else (s2, s1)
 
@@ -150,13 +149,13 @@ def minmax_benchmark(stock_a, stock_b, initial_value=1e6,
     portfolio : portfolio (pandas.DataFrame)
         A portfolio DataFrame over the same index
     """
-    
+
     # ========================================
     # Initializing variables
     # ========================================
-    
+
     actions = [-0.25, -0.1, -0.05, 0, 0.05, 0.1, 0.25]
-    
+
     # Validating arguments
     _benchmark_validate_args(**locals())
     opt = False if opt.lower() == "min" else True
@@ -168,11 +167,11 @@ def minmax_benchmark(stock_a, stock_b, initial_value=1e6,
     # Initializing row iterators
     iter_A = stock_a.iteritems()
     iter_B = stock_b.iteritems()
-    
+
     # Setting current values
     (cur_date_A, holding_A.cost) = iter_A.next()
     (cur_date_B, holding_B.cost) = iter_B.next()
-    
+
     # Checking dates
     while cur_date_A != cur_date_B:
         # Debug message
@@ -182,31 +181,32 @@ def minmax_benchmark(stock_a, stock_b, initial_value=1e6,
             (cur_date_A, holding_A.cost) = iter_A.next()
         else:
             (cur_date_B, holding_B.cost) = iter_B.next()
-    
+
     # Initializing holdings
     (holding_A, holding_B, cash) = allocate_stocks(initial_value,
                holding_A.cost, holding_B.cost,
                trans_cost = trans_cost,
                target_weights = target_weights)
-    
+
     # ========================================
     # Iterating across histories
     # ========================================
 
     try:
-        while True:        
+        while True:
             # Write to output
+
             date  = cur_date_A
             total = holding_A.total + holding_B.total + cash
             total = round(total, 2)
             portfolio.loc[date, ('num_lo', 'num_hi')] = (holding_A.num, holding_B.num)
             portfolio.loc[date, 'cash']  = cash
             portfolio.loc[date, 'total'] = total
-            
+
             # Getting next stocks
             (nxt_date_A, nxt_val_A) = iter_A.next()
             (nxt_date_B, nxt_val_B) = iter_B.next()
-            
+
             # Checking dates
             while nxt_date_A != nxt_date_B:
                 # Debug message
@@ -216,7 +216,7 @@ def minmax_benchmark(stock_a, stock_b, initial_value=1e6,
                     (nxt_date_A, nxt_val_A) = iter_A.next()
                 else:
                     (nxt_date_B, nxt_val_B) = iter_B.next()
-            
+
             # Comparing growth options
             minmax   = -float("Inf") if opt else float("Inf")
             minmax_A = 0
