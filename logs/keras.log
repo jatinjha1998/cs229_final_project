@@ -1,7 +1,0 @@
-Requirement already satisfied (use --upgrade to upgrade): keras in /afs/.ir.stanford.edu/users/o/j/ojin/.local/lib/python2.7/site-packages
-Requirement already satisfied (use --upgrade to upgrade): theano in /afs/.ir.stanford.edu/users/o/j/ojin/.local/lib/python2.7/site-packages (from keras)
-Requirement already satisfied (use --upgrade to upgrade): pyyaml in /afs/.ir.stanford.edu/users/o/j/ojin/.local/lib/python2.7/site-packages (from keras)
-Requirement already satisfied (use --upgrade to upgrade): six in /usr/local/lib/python2.7/dist-packages (from keras)
-Requirement already satisfied (use --upgrade to upgrade): numpy>=1.7.1 in /usr/local/lib/python2.7/dist-packages (from theano->keras)
-Requirement already satisfied (use --upgrade to upgrade): scipy>=0.11 in /afs/.ir.stanford.edu/users/o/j/ojin/.local/lib/python2.7/site-packages (from theano->keras)
-Cleaning up...

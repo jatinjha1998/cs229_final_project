@@ -1,4 +1,4 @@
-""" Model sub-module
+""" RL sub-module
 
 Deals with specifying the problem, environment, actions, and model state
 """
@@ -10,15 +10,10 @@ __all__ = ['Price', \
            'State', \
            'last_return_reward', \
            'sharpe_ratio_reward', \
-           'choose_actions', \
-           'create_model', \
-           'copy_model', \
-           'track_model']
+           'choose_actions']
 
 import numpy as np
 import pandas as pd
-from keras.models import Sequential
-from keras.layers import Dense, Activation
 
 from .portfolio import *
 from .stock_history import *
@@ -34,25 +29,26 @@ class State:
     """Defines the agent's state for Q-learning
 
     Includes the two stock histories, number of stocks owned, current reward,
-    cash, etc."""
+    cash, etc.
+    """
 
     def num_states(self):
-        return 4 + self.k * 2
+        return 4 + self.d * 2
 
     def __init__(self, stocks: StockPair, cash: Price=1e6,
             target_weights=(0.5, 0.5), d: int=2,
             trans_cost: Price=0.01):
         """Initializes state by buying stocks to reach target weights (lo, hi)
 
-        d is the number of days to input to model
+        d is the number of days (including the current) to input to model
         """
         self.trans_cost = trans_cost
 
         if (d < 1):
             raise ValueError('d must be greater than 0')
 
-        # life starts on the last day of k, but zero indexing
-        t = d - 1
+        # life starts on the last day of d
+        t = max(d - 2, 0)
         # keep the stock holding objects just for API ease
         self.lo, self.hi, self.cash = allocate_stocks(cash,
                 stocks.hist_lo[d], stocks.hist_hi[d],
@@ -63,11 +59,12 @@ class State:
                 cost_hi=stocks.hist_hi)
 
         #  pdrevious days will be NaNs . . .
-        self.portfolio.ix[0:t, ['num_lo', 'num_hi', 'cash', 'total']] = np.nan
+        self.portfolio.ix[0:(t+1), ['num_lo', 'num_hi', 'cash', 'total']] = np.nan
 
         # assume both stocks have the same length
         self.MAX_T = len(self.portfolio)
         # current location in stock histories
+        self.d = d
         self.t = t
         self.step()
 
@@ -75,10 +72,10 @@ class State:
         if attr == 'total':
             return self.lo + self.hi + self.cash
         elif attr == 'state':
-            return (self.portfolio.ix[self.t-1, 'cost_lo'],
-                self.lo.cost, self.lo.num,
-                self.portfolio.ix[self.t-1, 'cost_hi'],
-                self.hi.cost, self.hi.num,
+            return (self.lo.num,
+                *self.portfolio.ix[(self.t-self.d+1):(self.t+1), 'cost_lo'].tolist(),
+                self.hi.num,
+                *self.portfolio.ix[(self.t-self.d+1):(self.t+1), 'cost_hi'].tolist(),
                 self.cash, self.total)
 
     def step(self):
@@ -170,31 +167,4 @@ def choose_actions(qvalues: np.array, ϵ=0.15):
            size=sum(take_random))
 
     return chosen_actions
-
-def create_model(n, k, H, non_linearity, init, optimizer):
-    model = Sequential([
-        Dense(input_dim=n, output_dim=H, init=init),
-        Activation(non_linearity),
-        Dense(output_dim=H, init=init), # H 1
-        Activation(non_linearity),
-        Dense(output_dim=H, init=init), # H 2
-        Activation(non_linearity),
-        Dense(output_dim=H, init=init), # H 3
-        Activation(non_linearity),
-        Dense(output_dim=k)])
-
-    model.compile(loss='mean_squared_error',
-                  optimizer=optimizer, metrics=['mean_squared_error'])
-
-    return model
-
-def copy_model(target, model):
-    target.set_weights(model.get_weights())
-
-def track_model(target, model, τ):
-    model_weights = model.get_weights()
-    target_weights = target.get_weights()
-    new_weights = [τ * m + (1-τ)*t for (m, t) in \
-        zip(model_weights, target_weights)]
-    target.set_weights(new_weights)
 

@@ -17,9 +17,10 @@ __pycache__
 *.png
 *.jpg
 
-# old stock files
-data/stocks/old
+# data files (too big)
+data
 *.csv
 
 # Logfiles
+logs
 *.log
