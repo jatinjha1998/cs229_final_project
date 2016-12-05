@@ -36,28 +36,39 @@ class State:
     Includes the two stock histories, number of stocks owned, current reward,
     cash, etc."""
 
-    @staticmethod
-    def num_states():
-        return 8
+    def num_states(self):
+        return 4 + self.k * 2
 
-    def __init__(self, stocks, cash=1e6,
-            target_weights=(0.5, 0.5), trans_cost=0.01):
-        """Initializes state by buying stocks to reach target weights (lo, hi)"""
+    def __init__(self, stocks: StockPair, cash: Price=1e6,
+            target_weights=(0.5, 0.5), d: int=2,
+            trans_cost: Price=0.01):
+        """Initializes state by buying stocks to reach target weights (lo, hi)
+
+        d is the number of days to input to model
+        """
         self.trans_cost = trans_cost
 
+        if (d < 1):
+            raise ValueError('d must be greater than 0')
+
+        # life starts on the last day of k, but zero indexing
+        t = d - 1
         # keep the stock holding objects just for API ease
         self.lo, self.hi, self.cash = allocate_stocks(cash,
-                stocks.hist_lo[0], stocks.hist_hi[0],
+                stocks.hist_lo[d], stocks.hist_hi[d],
                 trans_cost=trans_cost, target_weights=target_weights,
                 symbol_a=stocks.lo, symbol_b=stocks.hi)
 
         self.portfolio = make_portfolio(cost_lo=stocks.hist_lo,
                 cost_hi=stocks.hist_hi)
 
+        #  pdrevious days will be NaNs . . .
+        self.portfolio.ix[0:t, ['num_lo', 'num_hi', 'cash', 'total']] = np.nan
+
         # assume both stocks have the same length
         self.MAX_T = len(self.portfolio)
         # current location in stock histories
-        self.t = 0
+        self.t = t
         self.step()
 
     def __getattr__(self, attr):
@@ -142,7 +153,7 @@ def sharpe_ratio_reward(m):
     return μ/s if (s != 0) else 0
 
 def choose_actions(qvalues: np.array, ϵ=0.15):
-    """Picks the action with the largest value w.p. (1-epsilon), otherwise random
+    """Picks the action with the largest value w.p. (1-ϵ), otherwise random
 
     Args:
     qvalues: np.array

@@ -175,7 +175,7 @@ def minmax_benchmark(stock_a, stock_b, initial_value=1e6,
     # Checking dates
     while cur_date_A != cur_date_B:
         # Debug message
-        print "WARN: Mismatched dates found"
+        print("WARN: Mismatched dates found")
         # Compare days, advance 'slower' date
         if cur_date_A < cur_date_B:
             (cur_date_A, holding_A.cost) = iter_A.next()
@@ -210,7 +210,7 @@ def minmax_benchmark(stock_a, stock_b, initial_value=1e6,
             # Checking dates
             while nxt_date_A != nxt_date_B:
                 # Debug message
-                print "WARN: Mismatched dates found"
+                print("WARN: Mismatched dates found")
                 # Compare days, advance 'slower' date
                 if nxt_date_A < nxt_date_B:
                     (nxt_date_A, nxt_val_A) = iter_A.next()

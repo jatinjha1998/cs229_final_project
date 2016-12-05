@@ -94,7 +94,7 @@ def trade_stocks(percent_trade: float, s1: StockHolding,  s2: StockHolding,
     if not (0 < percent_trade < 1):
         raise ValueError('percent_trade ({}) must be in (0, 1)'.format(percent_trade))
 
-    total = s1.total + s2.total + cash
+    total = s1 + s2 + cash
 
     # number of stocks to sell off from the larger stock
     # do the sell first then buy
