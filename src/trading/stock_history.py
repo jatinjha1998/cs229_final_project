@@ -9,6 +9,7 @@ __all__ = ['download_stock_histories', \
            'STOCK_DATA_DIR', \
            'get_lo_beta_stock_symbols', \
            'get_hi_beta_stock_symbols', \
+           'get_stock_betas', \
            'LO_BETA_DIR', \
            'HI_BETA_DIR', \
            'StockPair', \
@@ -41,11 +42,11 @@ class StockPair:
         self.hist_lo = hist_lo
         self.hist_hi = hist_hi
 
-def get_stock_pairs(train_size=20):
+def get_stock_pairs(train_size=0.8):
     """Reads in csv's of stock data and returns arrays of StockPair objects.
 
     Returns all possible combinations of low- and high-beta stocks, with
-    'training_size' specifying the split into the training and test vectors, 
+    'training_size' specifying the split into the training and test vectors,
     respectively.
     For more info, see 'sklearn.model_selection.train_test_split'"""
 
@@ -64,15 +65,23 @@ def get_stock_pairs(train_size=20):
 
 def get_lo_beta_stock_symbols():
     """List of ticker symbols for low-beta stocks"""
-    return [line.strip() for line in 
+    return [line.strip() for line in
             open(join(LO_BETA_DIR, 'stock_symbols.txt'))]
 
 def get_hi_beta_stock_symbols():
     """List of ticker symbols for high-beta stocks"""
-    return [line.strip() for line in 
+    return [line.strip() for line in
             open(join(HI_BETA_DIR, 'stock_symbols.txt'))]
 
-def download_stock_histories(path, stock, 
+def get_stock_betas():
+    betas = dict()
+    for line in open(join(STOCK_DATA_DIR, 'betas.csv')):
+        sym, beta = line.split(',')
+        betas[sym] = float(beta)
+
+    return betas
+
+def download_stock_histories(path, stock,
         start_date=DEFAULT_START_DATE, end_date=DEFAULT_END_DATE,
         source='google'):
     """ Uses ``pandas_datareader`` to query the source for closing stock prices.
@@ -98,7 +107,7 @@ def download_stock_histories(path, stock,
     if end_date <= start_date:
         raise ValueError('Start date is not before end date')
 
-    stock_data = datareader.DataReader(stock, 
+    stock_data = datareader.DataReader(stock,
             source, start_date, end_date)
     if isinstance(stock_data, pd.Panel):
         stock_data = stock_data.transpose(2, 1, 0)

@@ -8,7 +8,7 @@ __all__ = ['Price', \
            'Action', \
            'actions', \
            'State', \
-           'last_return_reward', \
+           'create_penalized_returns_reward', \
            'sharpe_ratio_reward', \
            'choose_actions']
 
@@ -59,7 +59,8 @@ class State:
                 cost_hi=stocks.hist_hi)
 
         #  pdrevious days will be NaNs . . .
-        self.portfolio.ix[0:(t+1), ['num_lo', 'num_hi', 'cash', 'total']] = np.nan
+        self.portfolio.ix[0:(t+1), ['num_lo', 'num_hi', 'cash', 'total']] =\
+            np.nan
 
         # assume both stocks have the same length
         self.MAX_T = len(self.portfolio)
@@ -73,9 +74,11 @@ class State:
             return self.lo + self.hi + self.cash
         elif attr == 'state':
             return (self.lo.num,
-                *self.portfolio.ix[(self.t-self.d+1):(self.t+1), 'cost_lo'].tolist(),
+                *self.portfolio.ix[(self.t-self.d+1):\
+                        (self.t+1), 'cost_lo'].tolist(),
                 self.hi.num,
-                *self.portfolio.ix[(self.t-self.d+1):(self.t+1), 'cost_hi'].tolist(),
+                *self.portfolio.ix[(self.t-self.d+1):\
+                        (self.t+1), 'cost_hi'].tolist(),
                 self.cash, self.total)
 
     def step(self):
@@ -86,7 +89,7 @@ class State:
 
         self.t += 1
 
-        if self.t == self.MAX_T:
+        if self.t >= (self.MAX_T - 1):
             raise StopIteration
 
         self.lo.cost = self.portfolio.ix[self.t, 'cost_lo']
@@ -95,7 +98,8 @@ class State:
         return old_total
 
     def execute_trade(self, action: Action):
-        """Sell off lo to buy hi (if action > 0, vice-versa if < 0) Returns old total"""
+        """Sell off lo to buy hi (if action > 0, vice-versa if < 0)
+        Returns old total"""
         old_total = self.total
 
         (buy_stk, sell_stk) = (self.hi, self.lo) \
@@ -116,15 +120,23 @@ class State:
 #  action has been executed on that day. the current return (r_t) for the
 #  action done on day == m.t will only be available after m.t is performed with
 #  m.step()
-def last_return_reward(m):
-    """Uses last return as the reward"""
-    if isinstance(m, pd.DataFrame):
-        return m.ix[-1, 'total'] - m.ix[-2, 'total']
-    else:
-        return (m.portfolio.ix[m.t-1, 'total'] - \
-            m.portfolio.ix[m.t-2, 'total']) \
-            if (m.t > 1) else 0
+def create_penalized_returns_reward(l: np.float=2):
+    """returns a function that calculates the most recent reward minus the
+    l * std of the reward for the entire period"""
 
+    def penalized_reward(m):
+        if isinstance(m, pd.DataFrame):
+            t = len(m)
+            return (m.ix[-1, 'total'] - m.ix[-2, 'total'] - \
+                l * np.std(m.total, ddof=1)) \
+                if (t > 1) else 0
+        else:
+            return (m.portfolio.ix[m.t-1, 'total'] - \
+                m.portfolio.ix[m.t-2, 'total'] - \
+                l * np.std(m.portfolio.total, ddof=1)) \
+                if (m.t > 1) else 0
+
+    return penalized_reward
 
 def sharpe_ratio_reward(m):
     """Sharpe Ratio of a portfolio up to (and including) index t, zero based
@@ -144,25 +156,25 @@ def sharpe_ratio_reward(m):
         return 0
 
     returns = returns[1:t] - returns[0:(t-1)]
-    μ = np.mean(returns)
+    mu = np.mean(returns)
     # unbiased (meh) estimator of std dev
     s = np.std(returns, ddof=1)
-    return μ/s if (s != 0) else 0
+    return mu/s if (s != 0) else 0
 
-def choose_actions(qvalues: np.array, ϵ=0.15):
-    """Picks the action with the largest value w.p. (1-ϵ), otherwise random
+def choose_actions(qvalues: np.array, eps=0.15):
+    """Picks the action with the largest value w.p. (1-eps), otherwise random
 
     Args:
     qvalues: np.array
         2d array of Q values for each action (axis 1, each column)
         per training element (state) across axis 0 (each row))
-    ϵ: float
+    eps: float
         Probability of choosing a random action
     """
     chosen_actions = np.argmax(qvalues, axis=1)
     # choose whethar to take random at random, randomly (uniform)
-    take_random = np.random.rand(qvalues.shape[0]) < ϵ
-    # generate random ϵ-greedy actions, randomly (also uniform)
+    take_random = np.random.rand(qvalues.shape[0]) < eps
+    # generate random epsilon-greedy actions, randomly (also uniform)
     chosen_actions[take_random] = np.random.randint(actions.size,
            size=sum(take_random))
 
