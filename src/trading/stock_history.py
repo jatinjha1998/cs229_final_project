@@ -17,15 +17,16 @@ __all__ = ['download_stock_histories', \
 
 import glob
 import itertools
-from os.path import join, splitext, basename, dirname, abspath
+from os.path import join, splitext, basename
 
 import numpy as np
 import pandas as pd
 import pandas_datareader.data as datareader
 from sklearn.model_selection import train_test_split
 
-MODULE_LOC = dirname(abspath(__file__))
-STOCK_DATA_DIR = abspath(join(MODULE_LOC, '..', '..', 'data', 'stocks'))
+from . import DATA_LOC
+
+STOCK_DATA_DIR = join(DATA_LOC, 'stocks')
 LO_BETA_DIR = join(STOCK_DATA_DIR, 'low_beta')
 HI_BETA_DIR = join(STOCK_DATA_DIR, 'high_beta')
 

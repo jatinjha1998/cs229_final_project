@@ -7,7 +7,12 @@ __all__ = ['create_model', \
            'copy_model', \
            'track_model', \
            'train_model', \
-           'my_init']
+           'my_init',\
+           'MODEL_DATA_DIR', \
+           'NOTHING_DIR', \
+           'REBAL_DIR', \
+           'MAX_DIR', \
+           'MIN_DIR']
 
 import numpy as np
 import pandas as pd
@@ -18,6 +23,13 @@ from keras.layers import Dense, Activation
 
 from .stock_history import *
 from .rl import *
+from . import DATA_LOC
+
+MODEL_DATA_DIR = join(DATA_LOC, 'module'))
+NOTHING_DIR = 'nothing'
+REBAL_DIR = 'rebal'
+MAX_DIR = 'max'
+MIN_DIR = 'min'
 
 def create_model(n, k, H, non_linearity, init):
     model = Sequential([
