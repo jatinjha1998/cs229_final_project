@@ -6,7 +6,8 @@ Deals with the actual training
 __all__ = ['create_model', \
            'copy_model', \
            'track_model', \
-           'train_model']
+           'train_model', \
+           'my_init']
 
 import numpy as np
 import pandas as pd
@@ -18,7 +19,7 @@ from keras.layers import Dense, Activation
 from .stock_history import *
 from .rl import *
 
-def create_model(n, k, H, non_linearity, init, optimizer):
+def create_model(n, k, H, non_linearity, init):
     model = Sequential([
         Dense(input_dim=n, output_dim=H, init=init),
         Activation(non_linearity),
@@ -29,9 +30,6 @@ def create_model(n, k, H, non_linearity, init, optimizer):
         Dense(output_dim=H, init=init), # H 3
         Activation(non_linearity),
         Dense(output_dim=k)])
-
-    model.compile(loss='mean_squared_error',
-                  optimizer=optimizer, metrics=['mean_squared_error'])
 
     return model
 
@@ -45,10 +43,10 @@ def track_model(target, model, tau):
         zip(model_weights, target_weights)]
     target.set_weights(new_weights)
 
-#my_init = 'glorot_normal'
+my_init = 'glorot_normal'
 _scale = 1E-4
-def my_init(shape, name=None):
-    return initializations.normal(shape, scale=_scale, name=name)
+#def my_init(shape, name=None):
+#    return initializations.normal(shape, scale=_scale, name=name)
 
 #alpha = 0.0001
 #opt = SGD(lr=alpha, decay=1e-5, momentum=0.95, nesterov=True)
@@ -99,9 +97,15 @@ def train_model(states, actions, D: np.int64=6, gamma: np.float64=0.99,
     available_states = states[:]
 
     model = create_model(n=n, k=k, H=H, non_linearity=non_lin,
-        init=init, optimizer=opt)
+        init=init)
     target = create_model(n=n, k=k, H=H, non_linearity=non_lin,
-        init=init, optimizer=opt)
+        init=init)
+
+    model.compile(loss='mean_squared_error',
+                  optimizer=optimizer, metrics=['mean_squared_error'])
+    target.compile(loss='mean_squared_error',
+                  optimizer=optimizer, metrics=['mean_squared_error'])
+
     # start off with exact same initialization for target nn
     copy_model(target, model)
 
