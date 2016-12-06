@@ -18,9 +18,14 @@ __pycache__
 *.jpg
 
 # data files (too big)
-data
-*.csv
+data/*
+!data/stocks/
+!data/stocks/low_beta
+!data/stocks/low_beta/*
+!data/stocks/high_beta
+!data/stocks/high_beta/*
 
 # Logfiles
 logs
 *.log
+
