@@ -1,11 +1,12 @@
-""" Stock History sub-module
+''' Stock History sub-module
 
 Reads in stock history data. Assumes data only has two columns:
     Date, Close
-"""
+'''
 
 __all__ = ['download_stock_histories', \
            'read_stock_history', \
+           'load_stock_pairs', \
            'STOCK_DATA_DIR', \
            'get_lo_beta_stock_symbols', \
            'get_hi_beta_stock_symbols', \
@@ -44,12 +45,12 @@ class StockPair:
         self.hist_hi = hist_hi
 
 def get_stock_pairs(train_size=0.8):
-    """Reads in csv's of stock data and returns arrays of StockPair objects.
+    '''Reads in csv's of stock data and returns arrays of StockPair objects.
 
     Returns all possible combinations of low- and high-beta stocks, with
-    'training_size' specifying the split into the training and test vectors,
+    `training_size` specifying the split into the training and test vectors,
     respectively.
-    For more info, see 'sklearn.model_selection.train_test_split'"""
+    For more info, see `sklearn.model_selection.train_test_split`'''
 
     lo_beta_files = get_lo_beta_stock_symbols()
     hi_beta_files = get_hi_beta_stock_symbols()
@@ -65,12 +66,12 @@ def get_stock_pairs(train_size=0.8):
     return train_test_split(stock_pairs, train_size=train_size)
 
 def get_lo_beta_stock_symbols():
-    """List of ticker symbols for low-beta stocks"""
+    '''List of ticker symbols for low-beta stocks'''
     return [line.strip() for line in
             open(join(LO_BETA_DIR, 'stock_symbols.txt'))]
 
 def get_hi_beta_stock_symbols():
-    """List of ticker symbols for high-beta stocks"""
+    '''List of ticker symbols for high-beta stocks'''
     return [line.strip() for line in
             open(join(HI_BETA_DIR, 'stock_symbols.txt'))]
 
@@ -85,7 +86,7 @@ def get_stock_betas():
 def download_stock_histories(path, stock,
         start_date=DEFAULT_START_DATE, end_date=DEFAULT_END_DATE,
         source='google'):
-    """ Uses ``pandas_datareader`` to query the source for closing stock prices.
+    ''' Uses ``pandas_datareader`` to query the source for closing stock prices.
 
     Drops all columns except for closing prices with the date as the index.
     Saves the resulting pandas.Series(es) ``<stock>.csv``.
@@ -103,7 +104,7 @@ def download_stock_histories(path, stock,
         start and end times to query over
     source : string or None = 'google'
         'google' or 'yahoo'
-    """
+    '''
 
     if end_date <= start_date:
         raise ValueError('Start date is not before end date')
@@ -120,7 +121,24 @@ def download_stock_histories(path, stock,
 
 read_stock_history = pd.Series.from_csv
 
+def load_stock_pairs(path: str):
+    '''Loads trading.StockPairs of the stock pairs (comma seperated) in path'''
+    # load the test set stock pairs from the saved file
+    stock_pairs = []
+
+    with open(path, 'r') as f:
+        for line in f:
+            (L, H) = line.strip().split(',')
+            hist_lo = read_stock_history(join(LO_BETA_DIR,
+                        L.strip() + '.csv'))
+            hist_hi = read_stock_history(join(HI_BETA_DIR,
+                        H.strip() + '.csv'))
+
+            stock_pairs.append(StockPair(L, H, hist_lo, hist_hi))
+
+    return stock_pairs
+
 #def read_stock_history(f, **kwargs):
-#    """Reads the csv ``f`` using ``pandas.Series.from_csv`` and passes on ``**kwargs``"""
+#    '''Reads the csv ``f`` using ``pandas.Series.from_csv`` and passes on ``**kwargs``'''
 #    return pandas.Series.from_csv(path=f, **kwargs).astype(numpy.float64)
 

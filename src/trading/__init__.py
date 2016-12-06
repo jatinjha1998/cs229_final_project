@@ -1,7 +1,7 @@
-"""The trading module
+'''The trading module
 
 Contains code to download stock data, read in csv, run benchmarks
-and trade stocks."""
+and trade stocks.'''
 
 from os.path import join, dirname, abspath
 
@@ -18,4 +18,5 @@ from .portfolio import *
 from .benchmarks import *
 from .rl import *
 from .nn import *
+from .testing import *
 

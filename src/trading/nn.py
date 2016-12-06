@@ -1,7 +1,7 @@
-""" Neural network submodule
+''' Neural network training submodule
 
 Deals with the actual training
-"""
+'''
 
 __all__ = ['create_model', \
            'copy_model', \
@@ -17,6 +17,8 @@ __all__ = ['create_model', \
            'MIN_DIR']
 
 from os.path import join
+from os import mkdir
+import pickle
 import numpy as np
 import pandas as pd
 from keras import initializations
@@ -45,6 +47,8 @@ def create_model(n, k, H, non_linearity, init):
         Activation(non_linearity),
         Dense(output_dim=H, init=init), # H 3
         Activation(non_linearity),
+        Dense(output_dim=H, init=init), # H 4
+        Activation(non_linearity),
         Dense(output_dim=k)])
 
     return model
@@ -71,7 +75,7 @@ def train_model(states, actions, D: np.int64=6, gamma: np.float64=0.99,
     eps: np.float64=0.15, H: np.int64=100, non_lin='relu', optimizer=Adam(),
     reward=sharpe_ratio_reward, tau :np.float=0.001, init=my_init,
     debug=False, debug_every: np.int64=2500, **additional):
-    """Takes a list of states and trains a neural net
+    '''Takes a list of states and trains a neural net
 
     states:
         a list of Trading.states. They should all have the same d value
@@ -103,7 +107,7 @@ def train_model(states, actions, D: np.int64=6, gamma: np.float64=0.99,
         model: the model
         train_record: record of reward and mse loss
         theta: a dict of all the thetas used in the model
-    """
+    '''
 
     #thetas
     theta = {'reward': reward,
@@ -208,7 +212,7 @@ def train_model(states, actions, D: np.int64=6, gamma: np.float64=0.99,
 
 def train_mult_models(thetas, state_init, train_size=0.8,
         debug=False, debug_every=5000):
-    """Unpacks a list of thetas into train_model and wraps folder gen
+    '''Unpacks a list of thetas into train_model and wraps folder gen
 
     Wraps the train_model function to generate the model folder and test files
     and other admin associated with the model
@@ -216,41 +220,47 @@ def train_mult_models(thetas, state_init, train_size=0.8,
     thetas: list of dictionaries
         unpacks each dictionary as key_word arguments to train_model
     state_init: dictionary to pass to State initialization
-    """
+    '''
     train_data, test_data = get_stock_pairs(train_size)
-    portfolio_states = [State(p, **state_init) for p in train_data]
 
     for (i, theta) in enumerate(thetas):
         assert 'reward_name' in theta
 
         if debug:
-            print('model: {:6d}'.format(i))
+            print('model: {:6d} of {:6d}'.format(i+1, len(thetas)))
+
+        # regenerate models each time because they may have different 'd's
+        portfolio_states = [State(p, **state_init, **theta) for p in train_data]
 
         (model, train_record, mdl_theta) = train_model(portfolio_states,
                 actions, **theta, debug=debug, debug_every=debug_every)
-
-        MODEL_DIR = '{:d}days_{:s}_{:d}h_{:s}_{:d}eps'\
-            .format(d, theta['reward_name'], H, non_lin, int(ϵ*100))
-        MODEL_DIR = join(MODEL_LOC, MODEL_DIR)
-
-        # make all the necessary folders
-        try:
-            os.mkdir(MODEL_DIR)
-            os.mkdir(join(MODEL_DIR, Q_PORT_DIR))
-            os.mkdir(join(MODEL_DIR, NOTHING_DIR))
-            os.mkdir(join(MODEL_DIR, REBAL_DIR))
-            os.mkdir(join(MODEL_DIR, MAX_DIR))
-            os.mkdir(join(MODEL_DIR, MIN_DIR))
-        except Exception:
-            pass
 
         # update theta
         theta.update(state_init)
         theta.update(mdl_theta)
 
+        MODEL_DIR = '{:d}days_{:s}_{:d}h'\
+            .format(theta['d'], theta['reward_name'], theta['H'])
+        MODEL_DIR = join(MODEL_LOC, MODEL_DIR)
+
+        # make all the necessary folders
+        try:
+            mkdir(MODEL_DIR)
+            mkdir(join(MODEL_DIR, Q_PORT_DIR))
+            mkdir(join(MODEL_DIR, NOTHING_DIR))
+            mkdir(join(MODEL_DIR, REBAL_DIR))
+            mkdir(join(MODEL_DIR, MAX_DIR))
+            mkdir(join(MODEL_DIR, MIN_DIR))
+        except Exception:
+            pass
+
         # save everything
         model.save(join(MODEL_DIR, 'model.h5'))
-        pickle.dump(theta, open(join(MODEL_DIR, "theta.p"), "wb" ))
+
+        # except the actual reward function
+        #  because you can't save functions
+        del theta['reward']
+        pickle.dump(theta, open(join(MODEL_DIR, 'theta.p'), 'wb' ))
 
         # save test portfolios
         with open(join(MODEL_DIR, 'test.csv'), 'w') as f:

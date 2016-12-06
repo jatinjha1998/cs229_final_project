@@ -1,7 +1,7 @@
-""" RL sub-module
+''' RL sub-module
 
 Deals with specifying the problem, environment, actions, and model state
-"""
+'''
 
 __all__ = ['Price', \
            'Shares', \
@@ -26,11 +26,11 @@ Action = np.float64
 actions = np.array([-0.25, -0.10, -0.05, 0, 0.05, 0.10, 0.25], dtype=Action)
 
 class State:
-    """Defines the agent's state for Q-learning
+    '''Defines the agent's state for Q-learning
 
     Includes the two stock histories, number of stocks owned, current reward,
     cash, etc.
-    """
+    '''
 
     def num_states(self):
         return 4 + self.d * 2
@@ -38,10 +38,10 @@ class State:
     def __init__(self, stocks: StockPair, cash: Price=1e6,
             target_weights=(0.5, 0.5), d: int=2,
             trans_cost: Price=0.01, **extras):
-        """Initializes state by buying stocks to reach target weights (lo, hi)
+        '''Initializes state by buying stocks to reach target weights (lo, hi)
 
         d is the number of days (including the current) to input to model
-        """
+        '''
         self.trans_cost = trans_cost
 
         if (d < 1):
@@ -82,7 +82,7 @@ class State:
                 self.cash, self.total)
 
     def step(self):
-        """Update state one time step forward"""
+        '''Update state one time step forward'''
         old_total = self.total
         self.portfolio.ix[self.t, ['num_lo', 'num_hi', 'cash', 'total']] = \
             [self.lo.num, self.hi.num, self.cash, self.total]
@@ -98,8 +98,8 @@ class State:
         return old_total
 
     def execute_trade(self, action: Action):
-        """Sell off lo to buy hi (if action > 0, vice-versa if < 0)
-        Returns old total"""
+        '''Sell off lo to buy hi (if action > 0, vice-versa if < 0)
+        Returns old total'''
         old_total = self.total
 
         (buy_stk, sell_stk) = (self.hi, self.lo) \
@@ -121,8 +121,8 @@ class State:
 #  action done on day == m.t will only be available after m.t is performed with
 #  m.step()
 def create_penalized_returns_reward(l: np.float=2):
-    """returns a function that calculates the most recent reward minus the
-    l * std of the reward for the entire period"""
+    '''returns a function that calculates the most recent reward minus the
+    l * std of the reward for the entire period'''
 
     def penalized_reward(m):
         if isinstance(m, pd.DataFrame):
@@ -139,10 +139,10 @@ def create_penalized_returns_reward(l: np.float=2):
     return penalized_reward
 
 def sharpe_ratio_reward(m):
-    """Sharpe Ratio of a portfolio up to (and including) index t, zero based
+    '''Sharpe Ratio of a portfolio up to (and including) index t, zero based
 
     Uses sample std dev (sₙ), not σₙ
-    """
+    '''
     # we get the values because else the date index would make subtraction
     #  across the same values
     if isinstance(m, pd.DataFrame):
@@ -164,7 +164,7 @@ def sharpe_ratio_reward(m):
     return mu/s if (s != 0) else 0
 
 def choose_actions(qvalues: np.array, eps=0.15):
-    """Picks the action with the largest value w.p. (1-eps), otherwise random
+    '''Picks the action with the largest value w.p. (1-eps), otherwise random
 
     Args:
     qvalues: np.array
@@ -172,7 +172,7 @@ def choose_actions(qvalues: np.array, eps=0.15):
         per training element (state) across axis 0 (each row))
     eps: float
         Probability of choosing a random action
-    """
+    '''
     chosen_actions = np.argmax(qvalues, axis=1)
     # choose whethar to take random at random, randomly (uniform)
     take_random = np.random.rand(qvalues.shape[0]) < eps
