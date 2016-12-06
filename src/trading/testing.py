@@ -175,7 +175,7 @@ def test_models(model_dirs: list, rebalance_period: np.int=30, bins: int=75):
 
         # evaluate the portfolio performances
         q_perf = []
-        onothing_perf = []
+        nothing_perf = []
         rebal_perf = []
 
         for st in test_states:
@@ -191,7 +191,9 @@ def test_models(model_dirs: list, rebalance_period: np.int=30, bins: int=75):
         nothing_perf = np.mean(np.asarray(nothing_perf), axis=0)
         rebal_perf = np.mean(np.asarray(rebal_perf), axis=0)
 
-        np.savetxt(join(MODEL_DIR, 'nothing_perf.csv'), nothing_perf)
-        np.savetxt(join(MODEL_DIR, 'rebal_perf.csv'), rebal_perf)
-        np.savetxt(join(MODEL_DIR, 'q_perf.csv'), q_perf)
+        np.savetxt(join(model_dir, 'nothing_perf.csv'), nothing_perf)
+        np.savetxt(join(model_dir, 'rebal_perf.csv'), rebal_perf)
+        np.savetxt(join(model_dir, 'q_perf.csv'), q_perf)
+
+    print('done.')
 
