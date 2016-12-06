@@ -7,13 +7,16 @@ __all__ = ['create_model', \
            'copy_model', \
            'track_model', \
            'train_model', \
+           'train_mult_models', \
            'my_init',\
-           'MODEL_DATA_DIR', \
+           'MODEL_LOC', \
+           'Q_PORT_DIR', \
            'NOTHING_DIR', \
            'REBAL_DIR', \
            'MAX_DIR', \
            'MIN_DIR']
 
+from os.path import join
 import numpy as np
 import pandas as pd
 from keras import initializations
@@ -25,7 +28,8 @@ from .stock_history import *
 from .rl import *
 from . import DATA_LOC
 
-MODEL_DATA_DIR = join(DATA_LOC, 'module'))
+MODEL_LOC = join(DATA_LOC, 'model')
+Q_PORT_DIR = 'q'
 NOTHING_DIR = 'nothing'
 REBAL_DIR = 'rebal'
 MAX_DIR = 'max'
@@ -64,9 +68,9 @@ _scale = 1E-4
 #opt = SGD(lr=alpha, decay=1e-5, momentum=0.95, nesterov=True)
 
 def train_model(states, actions, D: np.int64=6, gamma: np.float64=0.99,
-    eps: np.float64=0.15, H: np.int64=100, non_lin='relu', opt=Adam(),
+    eps: np.float64=0.15, H: np.int64=100, non_lin='relu', optimizer=Adam(),
     reward=sharpe_ratio_reward, tau :np.float=0.001, init=my_init,
-    debug=False, debug_every: np.int64=2500):
+    debug=False, debug_every: np.int64=2500, **additional):
     """Takes a list of states and trains a neural net
 
     states:
@@ -85,8 +89,8 @@ def train_model(states, actions, D: np.int64=6, gamma: np.float64=0.99,
         activation function
     init:
         layer initialization
-    opt:
-        SGD optimizer
+    optimizer:
+        SGD optimizer, type keras.Optimizer
     tau:
         target-model drift
     reward:
@@ -94,7 +98,21 @@ def train_model(states, actions, D: np.int64=6, gamma: np.float64=0.99,
 
     debug, debug_ever:
         whether to output debugging information, and how ofter to do so
+
+    returns
+        model: the model
+        train_record: record of reward and mse loss
+        theta: a dict of all the thetas used in the model
     """
+
+    #thetas
+    theta = {'reward': reward,
+         'D': D,
+         'gamma': gamma,
+         'eps': eps,
+         'H': H,
+         'non_lin': non_lin,
+         'tau': tau}
 
     # training record
     train_record = pd.DataFrame(columns=('reward', 'loss'))
@@ -125,6 +143,7 @@ def train_model(states, actions, D: np.int64=6, gamma: np.float64=0.99,
     while True:
         if available_states == []:
             # nothing left :(
+            print('finished training')
             break
         # fill the experience replay
         elif len(available_states) < D:
@@ -185,5 +204,56 @@ def train_model(states, actions, D: np.int64=6, gamma: np.float64=0.99,
 
         i += 1
 
-    return (model, train_record)
+    return (model, train_record, theta)
+
+def train_mult_models(thetas, state_init, train_size=0.8,
+        debug=False, debug_every=5000):
+    """Unpacks a list of thetas into train_model and wraps folder gen
+
+    Wraps the train_model function to generate the model folder and test files
+    and other admin associated with the model
+
+    thetas: list of dictionaries
+        unpacks each dictionary as key_word arguments to train_model
+    state_init: dictionary to pass to State initialization
+    """
+    train_data, test_data = get_stock_pairs(train_size)
+    portfolio_states = [State(p, **state_init) for p in train_data]
+
+    for (i, theta) in enumerate(thetas):
+        assert 'reward_name' in theta
+
+        if debug:
+            print('model: {:6d}'.format(i))
+
+        (model, train_record, mdl_theta) = train_model(portfolio_states,
+                actions, **theta, debug=debug, debug_every=debug_every)
+
+        MODEL_DIR = '{:d}days_{:s}_{:d}h_{:s}_{:d}eps'\
+            .format(d, theta['reward_name'], H, non_lin, int(ϵ*100))
+        MODEL_DIR = join(MODEL_LOC, MODEL_DIR)
+
+        # make all the necessary folders
+        try:
+            os.mkdir(MODEL_DIR)
+            os.mkdir(join(MODEL_DIR, Q_PORT_DIR))
+            os.mkdir(join(MODEL_DIR, NOTHING_DIR))
+            os.mkdir(join(MODEL_DIR, REBAL_DIR))
+            os.mkdir(join(MODEL_DIR, MAX_DIR))
+            os.mkdir(join(MODEL_DIR, MIN_DIR))
+        except Exception:
+            pass
+
+        # update theta
+        theta.update(state_init)
+        theta.update(mdl_theta)
+
+        # save everything
+        model.save(join(MODEL_DIR, 'model.h5'))
+        pickle.dump(theta, open(join(MODEL_DIR, "theta.p"), "wb" ))
+
+        # save test portfolios
+        with open(join(MODEL_DIR, 'test.csv'), 'w') as f:
+            for p in test_data:
+                f.write('{:s},{:s}\n'.format(p.lo, p.hi))
 

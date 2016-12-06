@@ -10,7 +10,7 @@ __all__ = ['MODULE_LOC', \
            'DATA_LOC']
 
 MODULE_LOC = dirname(abspath(__file__))
-PROJECT_LOC =  abspath(join(MODULE_LOC, '..', '..')
+PROJECT_LOC =  abspath(join(MODULE_LOC, '..', '..'))
 DATA_LOC = join(PROJECT_LOC, 'data')
 
 from .stock_history import *

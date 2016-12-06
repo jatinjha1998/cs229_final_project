@@ -12,7 +12,8 @@ A portfolio is a pandas.DataFrame with a time index and the following columns:
 __all__ = ['make_portfolio', \
            'allocate_stocks',\
            'trade_stocks',\
-           'StockHolding']
+           'StockHolding', \
+           'portfolio_returns']
 
 import numpy
 import pandas
@@ -43,13 +44,18 @@ class StockHolding:
 
 def make_portfolio(cost_lo=0, num_lo=0, cost_hi=0, num_hi=0,
         cash=0, total=0, index=None):
-    """Makes a portfolia dataframe"""
+    """Makes a portfolio dataframe"""
     portfolio = pandas.DataFrame(data={'cost_lo': cost_lo, 'num_lo': num_lo,
         'cost_hi': cost_hi, 'num_hi': num_hi,
         'cash': cash, 'total': total}, index=index)
     # drop rows with missing stock data: all stocks start since 2006, but
     #  some have random missing days
     return portfolio.dropna()
+
+def portfolio_returns(portfolio):
+    """Gets the returns of the portfolio on each day"""
+    returns = portfolio.total.dropna()
+    return returns[1:] - returns[:-1].values
 
 def allocate_stocks(total_amount=1E6,
                     cost_a=16, cost_b=16, trans_cost=0.01,

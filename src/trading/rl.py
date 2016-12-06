@@ -37,7 +37,7 @@ class State:
 
     def __init__(self, stocks: StockPair, cash: Price=1e6,
             target_weights=(0.5, 0.5), d: int=2,
-            trans_cost: Price=0.01):
+            trans_cost: Price=0.01, **extras):
         """Initializes state by buying stocks to reach target weights (lo, hi)
 
         d is the number of days (including the current) to input to model
@@ -143,19 +143,21 @@ def sharpe_ratio_reward(m):
 
     Uses sample std dev (sₙ), not σₙ
     """
+    # we get the values because else the date index would make subtraction
+    #  across the same values
     if isinstance(m, pd.DataFrame):
-        returns = m.ix[:, 'total'].values
-        t = len(m)
+        returns = m.ix[:, 'total'].dropna().values
     else:
-        returns = m.portfolio.ix[0:m.t, 'total'].values
-        t = m.t
+        # have to drop nans because may be later initialization days
+        returns = m.portfolio.ix[:m.t, 'total'].dropna().values
 
+    t = len(returns)
     if t < 3:
         # no returns yet if just one day old
         # two days old, one return, sharpe ratio undefined . . .
         return 0
 
-    returns = returns[1:t] - returns[0:(t-1)]
+    returns = returns[1:t] - returns[:(t-1)]
     mu = np.mean(returns)
     # unbiased (meh) estimator of std dev
     s = np.std(returns, ddof=1)
