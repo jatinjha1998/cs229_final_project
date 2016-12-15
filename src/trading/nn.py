@@ -239,8 +239,8 @@ def train_mult_models(thetas, state_init, train_size=0.8,
         theta.update(state_init)
         theta.update(mdl_theta)
 
-        MODEL_DIR = '{:d}days_{:s}_{:d}h'\
-            .format(theta['d'], theta['reward_name'], theta['H'])
+        MODEL_DIR = '{:d}days_{:s}'\
+            .format(theta['d'], theta['reward_name'])
         MODEL_DIR = join(MODEL_LOC, MODEL_DIR)
 
         # make all the necessary folders
