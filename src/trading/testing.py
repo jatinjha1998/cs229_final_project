@@ -179,7 +179,8 @@ def test_models(model_dirs: list, rebalance_period: np.int=30, bins: int=75):
         rebal_perf = []
 
         for st in test_states:
-            q_perf.append(portfolio_metrics(st.portfolio, reward))
+            # nn doesn't calculate for last day??
+            q_perf.append(portfolio_metrics(st.portfolio[:-1], reward))
 
         for p in do_nothing_portfolios:
             nothing_perf.append(portfolio_metrics(p, reward))

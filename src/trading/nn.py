@@ -249,8 +249,6 @@ def train_mult_models(thetas, state_init, train_size=0.8,
             mkdir(join(MODEL_DIR, Q_PORT_DIR))
             mkdir(join(MODEL_DIR, NOTHING_DIR))
             mkdir(join(MODEL_DIR, REBAL_DIR))
-            mkdir(join(MODEL_DIR, MAX_DIR))
-            mkdir(join(MODEL_DIR, MIN_DIR))
         except Exception:
             pass
 
